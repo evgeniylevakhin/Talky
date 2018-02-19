@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Talky.Channel;
-using Talky.Message;
 using Talky.Client;
 using System.Threading;
 using System.Net.Sockets;

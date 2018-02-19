@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Talky.Client;
+﻿using Talky.Client;
 using Talky.Authentication;
-using Talky.Channel;
 
 namespace Talky.Command
 {
