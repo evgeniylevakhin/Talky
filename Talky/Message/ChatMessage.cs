@@ -30,7 +30,7 @@ namespace Talky.Message
 
             int time = (int) (DateTime.UtcNow.Subtract(Program.EPOCH_START)).TotalSeconds;
             int clientTime = _client.LastMessage;
-            bool isAdmin = (_client.Account != null ? _client.Account.Role.Equals("admin") : false);
+            bool isAdmin = (_client.Account != null && _client.Account.Role == Role.Admin);
 
             if (!isAdmin && time - clientTime < Program.SPAM_DELAY)
             {
