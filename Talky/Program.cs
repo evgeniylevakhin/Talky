@@ -20,14 +20,12 @@ namespace Talky
         public static readonly DateTime StartTime = new DateTime(1970, 1, 1);
         private static bool _isFirst;
         private static readonly EventWaitHandle SyncHandle = new EventWaitHandle(false, EventResetMode.AutoReset, "talkyservermtx", out _isFirst);
-
         private static readonly AutoResetEvent ConsoleWaitEvent = new AutoResetEvent(false);
 
-        static ConsoleEventDelegate ExitHandler; 
+        private static ConsoleEventDelegate _exitHandler; 
         private delegate bool ConsoleEventDelegate(int eventType);
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
-
 
         private bool _panicMode;
 
@@ -39,8 +37,8 @@ namespace Talky
 
         static void Main(string[] args)
         {
-            ExitHandler = CurrentDomain_ProcessExit;
-            SetConsoleCtrlHandler(ExitHandler, true);
+            _exitHandler = CurrentDomain_ProcessExit;
+            SetConsoleCtrlHandler(_exitHandler, true);
 
             Console.Write("Starting server... ");
             int port = 0;
@@ -130,18 +128,24 @@ namespace Talky
             return true;
         }
 
-        private static void ManageBackup()
+        private static void WaitForAnotherInstance()
         {
             Console.Write("Waiting for syncronization handle...");
             if (!_isFirst)
                 SyncHandle.WaitOne();
 
-            var num = CountProcess(Process.GetCurrentProcess().ProcessName);
+            Console.WriteLine(" acquired");
+        }
 
-            if (num < 2)
-            {
-                Process.Start(Application.ExecutablePath);
-            }
+        private static void ManageInstances()
+        {
+            var num = CountProcess(Process.GetCurrentProcess().ProcessName);
+            Console.WriteLine($"Number of processes running {num}");
+
+            if (num >= 2) return;
+
+            Console.WriteLine("Starting another instance");
+            Process.Start(Application.ExecutablePath);
         }
 
         private Program()
@@ -153,16 +157,17 @@ namespace Talky
             //add loop to clean up/reinit?
             try
             {
-                ManageBackup();
-
-                Thread listenerThread = new Thread(ListenForClients);
-                listenerThread.Start();
-
                 Thread channelManagerThread = new Thread(MonitorChannels);
                 channelManagerThread.Start();
 
                 Thread activityMonitorThread = new Thread(MonitorActivity);
                 activityMonitorThread.Start();
+
+                WaitForAnotherInstance();
+                ManageInstances();
+
+                Thread listenerThread = new Thread(ListenForClients);
+                listenerThread.Start();
 
                 ShowConsole();
             }
@@ -250,6 +255,8 @@ namespace Talky
 
         private void MonitorChannels()
         {
+            var delay = new AutoResetEvent(false);
+
             while (!_panicMode)
             {
                 IReadOnlyCollection<ClientChannel> clientChannels = _channelRepository.Get<ClientChannel>();
@@ -265,12 +272,14 @@ namespace Talky
                     }
                 }
 
-                Thread.Sleep(5000);
+                delay.WaitOne(5000);
             }
         }
 
         private void MonitorActivity()
         {
+            var delay = new AutoResetEvent(false);
+
             while (!_panicMode)
             {
                 var clients = _clientRepository.All();
@@ -286,7 +295,7 @@ namespace Talky
                     }
                 }
 
-                Thread.Sleep(5000);
+                delay.WaitOne(5000);
             }
         }
 
