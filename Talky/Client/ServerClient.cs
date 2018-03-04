@@ -38,7 +38,7 @@ namespace Talky.Client
         {
             Username = "%";
             TcpClient = client;
-            LastActivity = (int) (DateTime.UtcNow.Subtract(Program.EPOCH_START)).TotalSeconds;
+            LastActivity = (int) (DateTime.UtcNow.Subtract(Program.StartTime)).TotalSeconds;
         }
 
         public void SendMessage(string message)

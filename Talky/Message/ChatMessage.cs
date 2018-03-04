@@ -28,11 +28,11 @@ namespace Talky.Message
                 return;
             }
 
-            int time = (int) (DateTime.UtcNow.Subtract(Program.EPOCH_START)).TotalSeconds;
+            int time = (int) (DateTime.UtcNow.Subtract(Program.StartTime)).TotalSeconds;
             int clientTime = _client.LastMessage;
             bool isAdmin = (_client.Account != null && _client.Account.Role == Role.Admin);
 
-            if (!isAdmin && time - clientTime < Program.SPAM_DELAY)
+            if (!isAdmin && time - clientTime < Program.SpamDelay)
             {
                 _client.SendMessage("§2Please slow down those messages! You must wait a few moments in between messages to prevent SPAM (not the meaty type).");
                 return;

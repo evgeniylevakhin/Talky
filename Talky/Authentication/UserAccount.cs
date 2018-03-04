@@ -26,8 +26,7 @@ namespace Talky.Authentication
 
         private Role StringToRole(string role)
         {
-            Role roleTmp;
-            Enum.TryParse(role, true, out roleTmp);
+            Enum.TryParse(role, true, out Role roleTmp);
 
             return roleTmp;
         }
@@ -39,7 +38,7 @@ namespace Talky.Authentication
                 return false;
             }
 
-            MySqlConnection connection = MySQLConnector.GetConnection();
+            MySqlConnection connection = MySqlConnector.GetConnection();
             MySqlCommand updateCommand = new MySqlCommand("UPDATE `users` SET `role`=@role WHERE `id`=@id ORDER BY `id` ASC LIMIT 1", connection);
             updateCommand.Prepare();
             updateCommand.Parameters.AddWithValue("@role", role);
@@ -58,7 +57,7 @@ namespace Talky.Authentication
                 return false;
             }
 
-            MySqlConnection connection = MySQLConnector.GetConnection();
+            MySqlConnection connection = MySqlConnector.GetConnection();
             MySqlCommand updateCommand = new MySqlCommand("UPDATE `users` SET `password`=@password WHERE `id`=@id ORDER BY `id` ASC LIMIT 1", connection);
             updateCommand.Prepare();
             updateCommand.Parameters.AddWithValue("@password", Hash(password));
@@ -71,7 +70,7 @@ namespace Talky.Authentication
 
         public bool ComparePassword(string password)
         {
-            MySqlConnection connection = MySQLConnector.GetConnection();
+            MySqlConnection connection = MySqlConnector.GetConnection();
 
             if (connection != null)
             {
@@ -99,7 +98,7 @@ namespace Talky.Authentication
 
         public static UserAccount Find(string username)
         {
-            MySqlConnection connection = MySQLConnector.GetConnection();
+            MySqlConnection connection = MySqlConnector.GetConnection();
 
             if (connection != null)
             {
@@ -133,7 +132,7 @@ namespace Talky.Authentication
                 return null;
             }
 
-            MySqlConnection connection = MySQLConnector.GetConnection();
+            MySqlConnection connection = MySqlConnector.GetConnection();
 
             if (connection != null)
             {
@@ -157,7 +156,7 @@ namespace Talky.Authentication
                 return null;
             }
 
-            MySqlConnection connection = MySQLConnector.GetConnection();
+            MySqlConnection connection = MySqlConnector.GetConnection();
 
             if (connection != null)
             {
@@ -173,7 +172,7 @@ namespace Talky.Authentication
                     UserAccount account = new UserAccount(id, reader.GetString("username"), reader.GetString("created_at"), reader.GetString("last_login"), reader.GetString("role"));
                     connection.Close();
 
-                    connection = MySQLConnector.GetConnection();
+                    connection = MySqlConnector.GetConnection();
                     MySqlCommand updateCommand = new MySqlCommand("UPDATE `users` SET `last_login`=NOW() WHERE `id`=@id ORDER BY `id` ASC LIMIT 1", connection);
                     updateCommand.Prepare();
                     updateCommand.Parameters.AddWithValue("@id", id);

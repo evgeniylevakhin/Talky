@@ -1,35 +1,48 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Talky.Channel;
 using Talky.Client;
 using System.Threading;
 using System.Net.Sockets;
 using System.Net;
+using System.Runtime.InteropServices;
 using Talky.Connection;
 using Talky.Command;
 using Talky.Exception;
-using Talky.Configuration;
+using System.Windows.Forms;
 
 namespace Talky
 {
     class Program
     {
+        public const double SpamDelay = 0.5;
+        public static readonly DateTime StartTime = new DateTime(1970, 1, 1);
+        private static bool _isFirst;
+        private static readonly EventWaitHandle SyncHandle = new EventWaitHandle(false, EventResetMode.AutoReset, "talkyservermtx", out _isFirst);
 
-        public const double SPAM_DELAY = 0.5;
-        public static readonly DateTime EPOCH_START = new DateTime(1970, 1, 1);
+        private static readonly AutoResetEvent ConsoleWaitEvent = new AutoResetEvent(false);
 
-        public bool PanicMode { get; private set; } = false;
+        static ConsoleEventDelegate ExitHandler; 
+        private delegate bool ConsoleEventDelegate(int eventType);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
 
-        private ChannelRepository _channelRepository = ChannelRepository.Instance;
-        private ClientRepository _clientRepository = ClientRepository.Instance;
-        private CommandManager _commandManager = CommandManager.Instance;
 
-        public int Port { get; } = 4096;
+        private bool _panicMode;
 
-        public static Program Instance { get; private set; }
+        private readonly ChannelRepository _channelRepository = ChannelRepository.Instance;
+        private readonly ClientRepository _clientRepository = ClientRepository.Instance;
+        private readonly CommandManager _commandManager = CommandManager.Instance;
+
+        public static int Port { get; private set; } = 4096;
 
         static void Main(string[] args)
         {
+            ExitHandler = CurrentDomain_ProcessExit;
+            SetConsoleCtrlHandler(ExitHandler, true);
+
+            Console.Write("Starting server... ");
             int port = 0;
             if (args.Length > 0)
             {
@@ -42,25 +55,20 @@ namespace Talky
                 port = 4096;
             }
 
-            new Program(port);
+            Console.WriteLine($" on port {port}");
+
+            Port = port;
+            new Program();
         }
 
-        private Program(int port)
+        private static int CountProcess(string name)
         {
-            Instance = this;
-            Port = port;
+            return Process.GetProcessesByName(name).Length;
+        }
 
-            Dictionary<string, string> defaults = new Dictionary<string, string>();
-            defaults.Add("+lobby", "true,false");
-            defaults.Add("+admins", "false,true");
-
-            ConfigurationFile config = new ConfigurationFile("channels");
-            if (!config.Exists())
-            {
-                config.Write(defaults);
-            }
-
-            IReadOnlyDictionary<string, string> channels = config.Values();
+        private void InitChannels()
+        {
+            IReadOnlyDictionary<string, string> channels = new Dictionary<string, string> { { "+lobby", "true,false" }, { "+admins", "false,true" } };
 
             foreach (string key in channels.Keys)
             {
@@ -70,18 +78,16 @@ namespace Talky
                     channelName = "+" + channelName;
                 }
 
-                string settings;
-                string[] splitSettings;
-                channels.TryGetValue(key, out settings);
-                splitSettings = settings.Split(new char[] { ',' }, 2);
+                channels.TryGetValue(key, out var settings);
+                var splitSettings = settings.Split(new[] { ',' }, 2);
 
                 if (splitSettings.Length != 2)
                 {
                     continue;
                 }
 
-                bool lobby = (splitSettings[0].Equals("true") ? true : false);
-                bool locked = (splitSettings[1].Equals("true") ? true : false);
+                bool lobby = splitSettings[0].Equals("true");
+                bool locked = splitSettings[1].Equals("true");
 
                 if (lobby && _channelRepository.GetLobby() != null)
                 {
@@ -93,15 +99,14 @@ namespace Talky
                     continue;
                 }
 
-                if (lobby)
-                {
-                    _channelRepository.Store(new LobbyChannel(channelName));
-                } else
-                {
-                    _channelRepository.Store(new SystemChannel(channelName, locked));
-                }
+                _channelRepository.Store(lobby
+                    ? new LobbyChannel(channelName)
+                    : new SystemChannel(channelName, locked));
             }
+        }
 
+        private bool RegisterCommands()
+        {
             try
             {
                 _commandManager.RegisterCommand(new CommandHelp());
@@ -116,28 +121,68 @@ namespace Talky
                 _commandManager.RegisterCommand(new CommandMute());
                 _commandManager.RegisterCommand(new CommandChangePassword());
                 _commandManager.RegisterCommand(new CommandMsg());
-            } catch (CommandExistsException cEE)
+            }
+            catch (CommandExistsException cEE)
             {
                 Console.WriteLine(cEE.StackTrace);
-                return;
+                return false;
             }
-
-            Thread listenerThread = new Thread(new ThreadStart(ListenForClients));
-            listenerThread.Start();
-
-            Thread consoleThread = new Thread(new ThreadStart(ShowConsole));
-            consoleThread.Start();
-
-            Thread channelManagerThread = new Thread(new ThreadStart(MonitorChannels));
-            channelManagerThread.Start();
-
-            Thread activityMonitorThread = new Thread(new ThreadStart(MonitorActivity));
-            activityMonitorThread.Start();
+            return true;
         }
+
+        private static void ManageBackup()
+        {
+            Console.Write("Waiting for syncronization handle...");
+            if (!_isFirst)
+                SyncHandle.WaitOne();
+
+            var num = CountProcess(Process.GetCurrentProcess().ProcessName);
+
+            if (num < 2)
+            {
+                Process.Start(Application.ExecutablePath);
+            }
+        }
+
+        private Program()
+        {
+            InitChannels();
+            if (!RegisterCommands())
+                return;
+
+            //add loop to clean up/reinit?
+            try
+            {
+                ManageBackup();
+
+                Thread listenerThread = new Thread(ListenForClients);
+                listenerThread.Start();
+
+                Thread channelManagerThread = new Thread(MonitorChannels);
+                channelManagerThread.Start();
+
+                Thread activityMonitorThread = new Thread(MonitorActivity);
+                activityMonitorThread.Start();
+
+                ShowConsole();
+            }
+            catch (System.Exception e)
+            {
+                //log exception
+            }
+        }
+
+        private static bool CurrentDomain_ProcessExit(int eventType)
+        {
+            ConsoleWaitEvent.Set();
+            SyncHandle.Set();
+            return false;
+        }
+
 
         public void OHGODNO(string WHAT, System.Exception theRealProblem = null)
         {
-            PanicMode = true;
+            _panicMode = true;
 
             IReadOnlyCollection<ServerClient> clients = _clientRepository.All();
             foreach (ServerClient client in clients)
@@ -170,7 +215,7 @@ namespace Talky
 
         private void ShowConsole()
         {
-            while (!PanicMode)
+            while (!_panicMode)
             {
                 Console.Clear();
                 Console.WriteLine("Talky | Created by SysVoid");
@@ -179,18 +224,18 @@ namespace Talky
                 Console.WriteLine("Channels: " + _channelRepository.Count());
                 Console.WriteLine("Commands: " + _commandManager.Count());
                 Console.WriteLine("==========================");
-                Thread.Sleep(500);
+                ConsoleWaitEvent.WaitOne(5000);
             }
         }
 
         private void ListenForClients()
         {
-            TcpListener listener = new TcpListener(IPAddress.Any, Port);
+            var listener = new TcpListener(IPAddress.Any, Port);
             listener.Start();
-            while (!PanicMode)
+            while (!_panicMode)
             {
-                TcpClient tcpClient = listener.AcceptTcpClient();
-                ServerClient serverClient = new ServerClient(tcpClient);
+                var tcpClient = listener.AcceptTcpClient();
+                var serverClient = new ServerClient(tcpClient);
 
                 if (_channelRepository.GetLobby() == null)
                 {
@@ -198,14 +243,14 @@ namespace Talky
                     continue;
                 }
 
-                Thread clientThread = new Thread(new ThreadStart(new ServerConnection(serverClient).HandleMessages));
+                Thread clientThread = new Thread(new ServerConnection(serverClient).HandleMessages);
                 clientThread.Start();
             }
         }
 
         private void MonitorChannels()
         {
-            while (!PanicMode)
+            while (!_panicMode)
             {
                 IReadOnlyCollection<ClientChannel> clientChannels = _channelRepository.Get<ClientChannel>();
 
@@ -226,14 +271,14 @@ namespace Talky
 
         private void MonitorActivity()
         {
-            while (!PanicMode)
+            while (!_panicMode)
             {
-                IReadOnlyCollection<ServerClient> clients = _clientRepository.All();
+                var clients = _clientRepository.All();
                 if (clients.Count > 0)
                 {
-                    foreach (ServerClient client in clients)
+                    foreach (var client in clients)
                     {
-                        int now = (int) (DateTime.UtcNow.Subtract(EPOCH_START)).TotalSeconds;
+                        int now = (int)(DateTime.UtcNow.Subtract(StartTime)).TotalSeconds;
                         if (client.LastActivity < now - 300)
                         {
                             client.Disconnect("Idle for " + (now - client.LastActivity) + " seconds.");

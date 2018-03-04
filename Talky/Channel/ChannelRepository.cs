@@ -4,12 +4,12 @@ using System.Linq;
 
 namespace Talky.Channel
 {
-    class ChannelRepository
+    internal class ChannelRepository
     {
 
         public static ChannelRepository Instance { get; } = new ChannelRepository();
-        private List<TalkyChannel> _channels = new List<TalkyChannel>();
-        private object _lock = new object();
+        private readonly List<TalkyChannel> _channels = new List<TalkyChannel>();
+        private readonly object _lock = new object();
 
         private ChannelRepository() { }
         
@@ -46,21 +46,14 @@ namespace Talky.Channel
         {
             lock (_lock)
             {
-                List<TalkyChannel> channels = _channels.FindAll(channel => channel is T);
-                List<T> goodChannels = new List<T>();
-
-                foreach (TalkyChannel channel in channels)
-                {
-                    goodChannels.Add((T) channel);
-                }
-
-                return goodChannels;
+                var channels = _channels.FindAll(channel => channel is T);
+                return channels.Cast<T>().ToList();
             }
         }
 
         public bool Exists<T>() where T : TalkyChannel
         {
-            return (Get<T>().Count > 0);
+            return Get<T>().Count > 0;
         }
 
         public IReadOnlyCollection<TalkyChannel> All()

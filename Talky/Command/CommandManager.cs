@@ -8,9 +8,9 @@ namespace Talky.Command
     {
 
         public static CommandManager Instance { get; private set; } = new CommandManager();
-        private Dictionary<string, TalkyCommand> _commands = new Dictionary<string, TalkyCommand>();
+        private readonly Dictionary<string, TalkyCommand> _commands = new Dictionary<string, TalkyCommand>();
 
-        private object _lock = new object();
+        private readonly object _lock = new object();
 
         private CommandManager() { }
 
@@ -44,8 +44,7 @@ namespace Talky.Command
         {
             lock (_lock)
             {
-                TalkyCommand theCommand = null;
-                _commands.TryGetValue(command.ToLower(), out theCommand);
+                _commands.TryGetValue(command.ToLower(), out var theCommand);
                 return theCommand;
             }
         }
