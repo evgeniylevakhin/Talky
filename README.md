@@ -41,7 +41,7 @@ Note that there can only be one lobby.
 #Authentication
 This server comes with some sexy authentication.
 
-Here's the MySQL table CREATE SQL thingy:
+Here's the MySQL table CREATE SQL thingy for users:
 ```
 CREATE TABLE `users` (
   `id` bigint(30) unsigned NOT NULL AUTO_INCREMENT,
@@ -52,6 +52,19 @@ CREATE TABLE `users` (
   `role` enum('admin','user') NOT NULL DEFAULT 'user',
   PRIMARY KEY (`id`),
   UNIQUE KEY `username_UNIQUE` (`username`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+```
+
+
+And for channel list:
+```
+CREATE TABLE `channels` (
+  `id` bigint(30) unsigned NOT NULL AUTO_INCREMENT,
+  `channel_name` varchar(32) NOT NULL,
+  `lobby_type` enum('true','false') NOT NULL DEFAULT 'false',
+  `locked` enum('true','false') NOT NULL DEFAULT 'false',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `channel_name_UNIQUE` (`channel_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 ```
 
