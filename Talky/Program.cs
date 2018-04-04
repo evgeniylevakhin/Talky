@@ -66,7 +66,9 @@ namespace Talky
 
         private void InitChannels()
         {
-            IReadOnlyDictionary<string, string> channels = new Dictionary<string, string> { { "+lobby", "true,false" }, { "+admins", "false,true" } };
+            //TODO: Only create and store channels into DB if this is the first server process launch
+            //      Otherwise, recreate existing channels by reading from DB for recovery process launch
+            IReadOnlyDictionary<string, string> channels = new Dictionary<string, string> { { "+lobby", "true,false" }, { "+admins", "false,true" }, { "+publicChat", "false,false" } };
 
             foreach (string key in channels.Keys)
             {
@@ -150,9 +152,14 @@ namespace Talky
 
         private Program()
         {
-            InitChannels();
+
             if (!RegisterCommands())
                 return;
+
+            WaitForAnotherInstance();
+            ManageInstances();
+
+            InitChannels();
 
             //add loop to clean up/reinit?
             try
@@ -163,9 +170,6 @@ namespace Talky
                 Thread activityMonitorThread = new Thread(MonitorActivity);
                 activityMonitorThread.Start();
 
-                WaitForAnotherInstance();
-                ManageInstances();
-
                 Thread listenerThread = new Thread(ListenForClients);
                 listenerThread.Start();
 
@@ -173,7 +177,7 @@ namespace Talky
             }
             catch (System.Exception e)
             {
-                //log exception
+                Console.WriteLine("Exception caught from starting threads");
             }
         }
 

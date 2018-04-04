@@ -1,6 +1,8 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Talky.Database;
 
 namespace Talky.Channel
 {
@@ -19,6 +21,29 @@ namespace Talky.Channel
             {
                 _channels.Add(channel);
             }
+
+            string lobbyString = (channel is LobbyChannel ? "true" : "false");
+            string lockedString = (channel.Locked ? "true" : "false");
+
+            MySqlConnection connection = MySqlConnector.GetConnection();
+            if (connection != null)
+            {
+                MySqlCommand command = new MySqlCommand("INSERT INTO `channels` VALUES(NULL, @channel_name, @lobby_type, @locked)", connection);
+                command.Prepare();
+                command.Parameters.AddWithValue("@channel_name", channel.Name);
+                command.Parameters.AddWithValue("@lobby_type", lobbyString);
+                command.Parameters.AddWithValue("@locked", lockedString);
+                try
+                {
+                    command.ExecuteReader();
+                }
+                catch
+                {
+                    Console.WriteLine("channels table: could not INSERT " + channel.Name);
+                }
+                connection.Close();
+            }
+
         }
 
         public LobbyChannel GetLobby()
@@ -78,6 +103,17 @@ namespace Talky.Channel
             {
                 _channels.Remove(channel);
             }
+
+            MySqlConnection connection = MySqlConnector.GetConnection();
+            if (connection != null)
+            {
+                MySqlCommand command = new MySqlCommand("DELETE FROM `channels` WHERE channel_name = @channel_name", connection);
+                command.Prepare();
+                command.Parameters.AddWithValue("@channel_name", channel.Name);
+                command.ExecuteReader();
+                connection.Close();
+            }
+
         }
 
     }
