@@ -37,7 +37,7 @@ namespace Talky.Command
             }
 
             ClientChannel chan = new ClientChannel(desiredChannel);
-            ChannelRepository.Instance.Store(chan);
+            ChannelRepository.Instance.Store(chan, true);
             client.SendMessage("§4Your channel has been created.");
             client.JoinChannel(chan);
         }

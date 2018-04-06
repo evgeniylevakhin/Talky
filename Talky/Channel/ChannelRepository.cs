@@ -15,7 +15,7 @@ namespace Talky.Channel
 
         private ChannelRepository() { }
         
-        public void Store(TalkyChannel channel)
+        public void Store(TalkyChannel channel, bool writeToDB)
         {
             lock (_lock)
             {
@@ -25,25 +25,27 @@ namespace Talky.Channel
             string lobbyString = (channel is LobbyChannel ? "true" : "false");
             string lockedString = (channel.Locked ? "true" : "false");
 
-            MySqlConnection connection = MySqlConnector.GetConnection();
-            if (connection != null)
+            if (true == writeToDB)
             {
-                MySqlCommand command = new MySqlCommand("INSERT INTO `channels` VALUES(NULL, @channel_name, @lobby_type, @locked)", connection);
-                command.Prepare();
-                command.Parameters.AddWithValue("@channel_name", channel.Name);
-                command.Parameters.AddWithValue("@lobby_type", lobbyString);
-                command.Parameters.AddWithValue("@locked", lockedString);
-                try
+                MySqlConnection connection = MySqlConnector.GetConnection();
+                if (connection != null)
                 {
-                    command.ExecuteReader();
+                    MySqlCommand command = new MySqlCommand("INSERT INTO `channels` VALUES(NULL, @channel_name, @lobby_type, @locked)", connection);
+                    command.Prepare();
+                    command.Parameters.AddWithValue("@channel_name", channel.Name);
+                    command.Parameters.AddWithValue("@lobby_type", lobbyString);
+                    command.Parameters.AddWithValue("@locked", lockedString);
+                    try
+                    {
+                        command.ExecuteReader();
+                    }
+                    catch
+                    {
+                        Console.WriteLine("channels table: could not INSERT " + channel.Name);
+                    }
+                    connection.Close();
                 }
-                catch
-                {
-                    Console.WriteLine("channels table: could not INSERT " + channel.Name);
-                }
-                connection.Close();
             }
-
         }
 
         public LobbyChannel GetLobby()
@@ -64,7 +66,33 @@ namespace Talky.Channel
 
         public bool Exists(string name)
         {
-            return (Get(name) != null);
+            bool retVal = false;
+
+            MySqlConnection connection = MySqlConnector.GetConnection();
+
+            if (connection != null)
+            {
+                MySqlCommand command = new MySqlCommand("SELECT `id` FROM `channels` WHERE `channel_name`=@channel_name ORDER BY `id` ASC LIMIT 1", connection);
+                command.Prepare();
+                command.Parameters.AddWithValue("@channel_name", name);
+
+                try
+                {
+                    MySqlDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        retVal = true;
+                    }
+
+                }
+                catch
+                {
+                    Console.WriteLine("channels table: could not SELECT " + name);
+                }
+                connection.Close();
+            }
+
+            return retVal;
         }
 
         public IReadOnlyList<T> Get<T>() where T : TalkyChannel

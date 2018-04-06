@@ -66,8 +66,23 @@ namespace Talky
 
         private void InitChannels()
         {
-            //TODO: Only create and store channels into DB if this is the first server process launch
-            //      Otherwise, recreate existing channels by reading from DB for recovery process launch
+
+            if (_channelRepository.Exists("+lobby"))
+            {
+                // Lobby is already in DB. Previous server already has channels in DB so this must be recovery
+                // Recreate channel list from DB, don't write new channels to DB
+                Console.Write("+lobby channel is already in DB! Server restarted and now doing recovery");
+
+                // TODO: Recreate channel repository list but do not write duplicates to DB
+                // Right now this is just making 1 lobby channel upon recovery
+                if (_channelRepository.GetLobby() == null)
+                {
+                    _channelRepository.Store(new LobbyChannel("+lobby"), false);
+                }
+
+                return;
+            }
+
             IReadOnlyDictionary<string, string> channels = new Dictionary<string, string> { { "+lobby", "true,false" }, { "+admins", "false,true" }, { "+publicChat", "false,false" } };
 
             foreach (string key in channels.Keys)
@@ -101,7 +116,7 @@ namespace Talky
 
                 _channelRepository.Store(lobby
                     ? new LobbyChannel(channelName)
-                    : new SystemChannel(channelName, locked));
+                    : new SystemChannel(channelName, locked), true);
             }
         }
 
