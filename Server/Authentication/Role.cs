@@ -1,6 +1,6 @@
 ﻿namespace Server.Authentication
 {
-    enum Role
+    public enum Role
     {
         
         User,

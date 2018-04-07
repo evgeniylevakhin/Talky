@@ -5,10 +5,11 @@ using Server.Message;
 
 namespace Server.Connection
 {
-    class ServerConnection
+    public class ServerConnection
     {
+        private bool _isRunning = true;
 
-        public ServerClient Client { get; private set; }
+        public ServerClient Client { get; }
 
         public ServerConnection(ServerClient client)
         {
@@ -16,16 +17,23 @@ namespace Server.Connection
             ClientRepository.Instance.Store(client);
         }
 
+        public void Disconnect()
+        {
+            _isRunning = false;
+        }
+
         public void HandleMessages()
         {
-            StreamReader reader = new StreamReader(Client.TcpClient.GetStream());
-            while (true)
+            var reader = new StreamReader(Client.TcpClient.GetStream());
+
+            while (_isRunning)
             {
+
                 string line = null;
                 
                 try
                 {
-                    line = reader.ReadLine().Replace("§", "");
+                    line = reader.ReadLine()?.Replace("§", "");
                 } catch
                 {
                     line = null;

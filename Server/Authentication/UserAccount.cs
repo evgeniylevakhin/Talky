@@ -6,7 +6,7 @@ using Server.Database;
 
 namespace Server.Authentication
 {
-    class UserAccount
+    public class UserAccount
     {
 
         public int AccountId { get; private set; }

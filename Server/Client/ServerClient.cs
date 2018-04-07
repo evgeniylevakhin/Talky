@@ -6,9 +6,8 @@ using Server.Channel;
 
 namespace Server.Client
 {
-    class ServerClient
+    public class ServerClient
     {
-
         public TcpClient TcpClient { get; set; }
 
         public int LastMessage { get; set; } = 0;
@@ -18,7 +17,7 @@ namespace Server.Client
         private string _username;
         public string Username
         {
-            get { return _username; }
+            get => _username;
             set
             {
                 if (value.Length > 16)
@@ -85,7 +84,7 @@ namespace Server.Client
         {
             if (channel.Locked)
             {
-                if (Account == null || !Account.Role.Equals("admin"))
+                if (Account == null || Account.Role != Role.Admin)
                 {
                     SendMessage("§2That channel is locked!");
                     return;

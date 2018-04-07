@@ -6,12 +6,11 @@ using Server.Channel;
 
 namespace Server.Client
 {
-    class ClientRepository
+    public class ClientRepository
     {
-
         public static ClientRepository Instance { get; } = new ClientRepository();
-        private List<ServerClient> _clients = new List<ServerClient>();
-        private object _lock = new object();
+        private readonly List<ServerClient> _clients = new List<ServerClient>();
+        private readonly object _lock = new object();
 
         private ClientRepository() { }
 

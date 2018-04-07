@@ -9,7 +9,7 @@ namespace Server.Command
 
         public override void Execute(ServerClient client, string[] args)
         {
-            if (client.Account == null || !client.Account.Role.Equals("admin"))
+            if (client.Account == null || client.Account.Role != Authentication.Role.Admin)
             {
                 client.SendMessage("§2That command is admin only!");
                 return;

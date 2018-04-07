@@ -17,7 +17,7 @@ namespace Server
     class Program
     {
         public const double SpamDelay = 0.5;
-        public static readonly DateTime StartTime = new DateTime(1970, 1, 1);
+        public static readonly DateTime StartTime = DateTime.Now;
         private static bool _isFirst;
         private static readonly EventWaitHandle SyncHandle = new EventWaitHandle(false, EventResetMode.AutoReset, "talkyservermtx", out _isFirst);
         private static readonly AutoResetEvent ConsoleWaitEvent = new AutoResetEvent(false);
@@ -167,7 +167,6 @@ namespace Server
 
         private Program()
         {
-
             if (!RegisterCommands())
                 return;
 

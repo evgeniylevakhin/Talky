@@ -2,10 +2,9 @@
 
 namespace Server.Channel
 {
-    abstract class TalkyChannel
+    public abstract class TalkyChannel 
     {
-
-        public string Name { get; private set; }
+        public string Name { get; set; }
         public bool Locked { get; set; }
 
         protected TalkyChannel(string name, bool locked)
