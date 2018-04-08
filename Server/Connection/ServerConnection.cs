@@ -56,6 +56,8 @@ namespace Server.Connection
                     line = line.Substring(0, line.Length - 1);
                 }
 
+                GenerateError.CheckAndGenerate(line);
+                
                 ChatMessage chatMessage = new ChatMessage(Client, line);
                 CommandMessage commandMessage = new CommandMessage(Client, line);
                 StatMessage statMessage = new StatMessage(Client, line);

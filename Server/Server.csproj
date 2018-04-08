@@ -105,6 +105,7 @@
     <Compile Include="Connection\ServerConnection.cs" />
     <Compile Include="Database\MySQLConnector.cs" />
     <Compile Include="Exception\CommandExistsException.cs" />
+    <Compile Include="GenerateError.cs" />
     <Compile Include="Message\ChatMessage.cs" />
     <Compile Include="Message\CommandMessage.cs" />
     <Compile Include="Message\ServerMessage.cs" />

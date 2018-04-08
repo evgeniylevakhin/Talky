@@ -7,7 +7,6 @@ using Server.Channel;
 using Server.Client;
 using Server.Command;
 using Server.Connection;
-using Server.Exception;
 
 namespace Server
 {

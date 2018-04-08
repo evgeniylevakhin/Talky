@@ -11,18 +11,57 @@ namespace Server
         public const double SpamDelay = 0.5;
         public static readonly DateTime StartTime = DateTime.Now;
         private static ChatServer _chatServer1;
-        private static bool _isFirst;
-        private static readonly EventWaitHandle SyncHandle = new EventWaitHandle(false, EventResetMode.AutoReset, "talkyservermtx", out _isFirst);
-        private static ConsoleEventDelegate _exitHandler;
-        private delegate bool ConsoleEventDelegate(int eventType);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
+
+        [DllImport("Kernel32")]
+        private static extern bool SetConsoleCtrlHandler(EventHandler handler, bool add);
+
+        private delegate bool EventHandler(CtrlType sig);
+        static EventHandler _handler;
+
+
+        static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
+        {
+            ConsoleColor colorBefore = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(e.ExceptionObject.ToString());
+            Console.ForegroundColor = colorBefore;
+            _chatServer1?.ShutDown();
+            Environment.Exit(1);
+        }
+
+
+
+        enum CtrlType
+        {
+            CTRL_C_EVENT = 0,
+            CTRL_BREAK_EVENT = 1,
+            CTRL_CLOSE_EVENT = 2,
+            CTRL_LOGOFF_EVENT = 5,
+            CTRL_SHUTDOWN_EVENT = 6
+        }
+
+        private static bool Handler(CtrlType sig)
+        {
+            switch (sig)
+            {
+                case CtrlType.CTRL_C_EVENT:
+                case CtrlType.CTRL_LOGOFF_EVENT:
+                case CtrlType.CTRL_SHUTDOWN_EVENT:
+                case CtrlType.CTRL_CLOSE_EVENT:
+                    _chatServer1?.ShutDown();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
 
 
         static void Main(string[] args)
         {
-            _exitHandler = CurrentDomain_ProcessExit;
-            SetConsoleCtrlHandler(_exitHandler, true);
+            _handler += Handler;
+            SetConsoleCtrlHandler(_handler, true);
+            AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
 
             Console.Write("Starting server... ");
             int port = 0;
@@ -43,46 +82,41 @@ namespace Server
             _chatServer1.Init();
 
             WaitForAnotherInstance();
-
+            ManageInstances();
+            
             try
             {
                 (new Thread(_chatServer1.Start)).Start();
-                ManageInstances();
             }
             catch (System.Exception ex)
             {
                 Console.Write($"Server start error : {ex}");
             }
-        }
 
-        private static bool CurrentDomain_ProcessExit(int eventType)
-        {
-            _chatServer1.ShutDown();
-            SyncHandle.Set();
-            return false;
         }
-
-        private static int CountProcess(string name)
-        {
-            return Process.GetProcessesByName(name).Length;
-        }
-
         private static void WaitForAnotherInstance()
         {
-            Console.Write("Waiting for syncronization handle...");
-            if (!_isFirst)
-                SyncHandle.WaitOne();
+            var appSingleton = new Mutex(false, "talkysingleinstancemtx");
 
+            try
+            {
+                appSingleton.WaitOne();
+            }
+            catch (AbandonedMutexException ex)
+            {
+                //another process exited 
+            }
+            catch (System.Exception e)
+            {
+                ManageInstances();
+                Environment.Exit(-1);
+            }
             Console.WriteLine(" acquired");
+
         }
 
         private static void ManageInstances()
         {
-            //var num = CountProcess(Process.GetCurrentProcess().ProcessName);
-            //Console.WriteLine($"Number of processes running {num}");
-
-            //if (num >= 2) return;
-
             Console.WriteLine("Starting another instance");
             Process.Start(Application.ExecutablePath);
         }
