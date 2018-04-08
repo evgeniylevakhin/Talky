@@ -65,6 +65,5 @@ namespace Server.Command
                 return _commands.Count();
             }
         }
-
     }
 }

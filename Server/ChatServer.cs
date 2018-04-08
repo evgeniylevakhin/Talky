@@ -21,6 +21,8 @@ namespace Server
         private readonly ChannelRepository _channelRepository = ChannelRepository.Instance;
         private readonly ClientRepository _clientRepository = ClientRepository.Instance;
         private readonly CommandManager _commandManager = CommandManager.Instance;
+        private Thread _listenerThread;
+        private TcpListener _listener;
 
         public ChatServer(int port)
         {
@@ -34,19 +36,22 @@ namespace Server
         public void ShutDown()
         {
             _isActive = false;
+            _listener?.Stop();
         }
 
         public void Start()
         {
             _isActive = true;
 
-            Thread listenerThread = new Thread(ListenForClients);
-            listenerThread.Start();
-
             while (_isActive)
             {
                 try
                 {
+                    if (!_listenerThread.IsAlive)
+                    {
+                        _listenerThread.Start();
+                    }
+
                     IReadOnlyCollection<ClientChannel> clientChannels = _channelRepository.Get<ClientChannel>();
 
                     if (clientChannels.Count > 0)
@@ -86,25 +91,22 @@ namespace Server
                 {
                     //todo:: 
                 }
-
             }
         }
 
         private void ListenForClients()
         {
-            TcpListener listener = null;
-
             while (_isActive)
             {
                 try
                 {
-                    if (listener == null)
+                    if (_listener == null)
                     {
-                        listener = new TcpListener(IPAddress.Any, _port);
-                        listener.Start();
+                        _listener = new TcpListener(IPAddress.Any, _port);
+                        _listener.Start();
                     }
 
-                    var tcpClient = listener.AcceptTcpClient();
+                    var tcpClient = _listener.AcceptTcpClient();
                     var serverClient = new ServerClient(tcpClient);
 
                     if (_channelRepository.GetLobby() == null)
@@ -183,6 +185,7 @@ namespace Server
         {
             RegisterCommands();
             InitChannels();
+            _listenerThread = new Thread(ListenForClients);
         }
 
         private void RegisterCommands()
