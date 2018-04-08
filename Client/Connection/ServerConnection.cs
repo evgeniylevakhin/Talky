@@ -62,10 +62,19 @@ namespace Client.Connection
             }
         }
 
-        public void Send(string msg)
+        public bool Send(string msg)
         {
-            _writer.WriteLine(msg);
-            _writer.Flush();
+            try
+            {
+                _writer.WriteLine(msg);
+                _writer.Flush();
+            }
+            catch (Exception e)
+            {
+                //todo:
+                return false;
+            }
+            return true;
         }
 
         public void Disconnect()

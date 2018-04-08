@@ -30,11 +30,12 @@ namespace Server.Connection
             {
 
                 string line = null;
-                
+
                 try
                 {
                     line = reader.ReadLine()?.Replace("§", "");
-                } catch
+                }
+                catch
                 {
                     line = null;
                 }
@@ -62,18 +63,21 @@ namespace Server.Connection
                 CommandMessage commandMessage = new CommandMessage(Client, line);
                 StatMessage statMessage = new StatMessage(Client, line);
 
-                Client.LastActivity = (int) (DateTime.UtcNow.Subtract(Program.StartTime)).TotalSeconds;
+                Client.LastActivity = (int)(DateTime.UtcNow.Subtract(Program.StartTime)).TotalSeconds;
 
                 if (chatMessage.Valid())
                 {
                     chatMessage.Handle();
-                } else if (commandMessage.Valid())
+                }
+                else if (commandMessage.Valid())
                 {
                     commandMessage.Handle();
-                } else if (statMessage.Valid())
+                }
+                else if (statMessage.Valid())
                 {
                     statMessage.Handle();
-                } else
+                }
+                else
                 {
                     // ???
                     Client.Disconnect("§2What was that?");

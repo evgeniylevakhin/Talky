@@ -141,8 +141,6 @@ namespace Server.Channel
                 command.ExecuteReader();
                 connection.Close();
             }
-
         }
-
     }
 }

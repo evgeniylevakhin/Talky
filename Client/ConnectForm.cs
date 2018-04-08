@@ -106,6 +106,5 @@ namespace Client
             Instance = null;
             Environment.Exit(0);
         }
-
     }
 }

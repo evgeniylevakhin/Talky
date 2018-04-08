@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Server.Exception;
 
 namespace Server.Command
 {
     class CommandManager
     {
-
         public static CommandManager Instance { get; private set; } = new CommandManager();
         private readonly Dictionary<string, TalkyCommand> _commands = new Dictionary<string, TalkyCommand>();
 
@@ -18,12 +16,10 @@ namespace Server.Command
         {
             lock (_lock)
             {
-                if (_commands.ContainsValue(command) || _commands.ContainsKey(command.CommandName.ToLower()))
+                if (!_commands.ContainsValue(command) && !_commands.ContainsKey(command.CommandName.ToLower()))
                 {
-                    throw new CommandExistsException("That command exists, you nutter!", command);
+                    _commands.Add(command.CommandName.ToLower(), command);
                 }
-
-                _commands.Add(command.CommandName.ToLower(), command);
             }
         }
 
