@@ -42,10 +42,7 @@ namespace Server.Connection
 
                 if (string.IsNullOrEmpty(line))
                 {
-                    if (Client.TcpClient.Connected)
-                    {
-                        Client.Disconnect();
-                    }
+                    Client.Disconnect();
                     return;
                 }
 

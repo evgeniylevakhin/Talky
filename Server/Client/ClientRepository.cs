@@ -27,7 +27,7 @@ namespace Server.Client
             username = username.ToLower();
             lock (_lock)
             {
-                return _clients.FirstOrDefault(client => String.Equals(client.Username, username, StringComparison.InvariantCultureIgnoreCase));
+                return _clients.FirstOrDefault(client => string.Equals(client.Username, username, StringComparison.InvariantCultureIgnoreCase));
             }
         }
 

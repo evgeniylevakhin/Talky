@@ -60,10 +60,11 @@ namespace Server.Client
 
         public void Disconnect(string reason = null)
         {
+            ClientRepository.Instance.Remove(this);
             if (reason != null)
             {
                 Channel.BroadcastMessage(Username + " disconnected: " + reason);
-                using (StreamWriter writer = new StreamWriter(TcpClient.GetStream()))
+                using (var writer = new StreamWriter(TcpClient.GetStream()))
                 {
                     writer.WriteLine("M:§2You were disconnected from the server. Reason: " + reason);
                     writer.Flush();
@@ -77,7 +78,6 @@ namespace Server.Client
             }
 
             TcpClient.Client.Close();
-            ClientRepository.Instance.Remove(this);
         }
 
         public void JoinChannel(TalkyChannel channel, bool announce = true)
@@ -91,11 +91,7 @@ namespace Server.Client
                 }
             }
 
-            if (Channel != null)
-            {
-                Channel.BroadcastMessage(Username + " left " + "§4" + Channel.Name + "§0.");
-            }
-
+            Channel?.BroadcastMessage(Username + " left " + "§4" + Channel.Name + "§0.");
             Channel = channel;
 
             if (announce)
@@ -103,6 +99,5 @@ namespace Server.Client
                 channel.BroadcastMessage(Username + " joined " + "§4" + channel.Name + "§0!");
             }
         }
-
     }
 }

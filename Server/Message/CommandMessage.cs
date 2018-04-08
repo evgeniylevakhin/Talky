@@ -41,7 +41,7 @@ namespace Server.Message
 
             int time = (int) (DateTime.UtcNow.Subtract(Program.StartTime)).TotalSeconds;
             int clientTime = _client.LastCommand;
-            bool isAdmin = (_client.Account != null ? _client.Account.Role.Equals("admin") : false);
+            bool isAdmin = (_client.Account != null && _client.Account.Role == Authentication.Role.Admin);
 
             if (!isAdmin && time - clientTime < Program.SpamDelay)
             {
