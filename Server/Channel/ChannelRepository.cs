@@ -20,31 +20,74 @@ namespace Server.Channel
             lock (_lock)
             {
                 _channels.Add(channel);
-            }
 
-            string lobbyString = (channel is LobbyChannel ? "true" : "false");
-            string lockedString = (channel.Locked ? "true" : "false");
 
-            if (true == writeToDB)
-            {
-                MySqlConnection connection = MySqlConnector.GetConnection();
-                if (connection != null)
+                string lobbyString = (channel is LobbyChannel ? "true" : "false");
+                string lockedString = (channel.Locked ? "true" : "false");
+
+                if (true == writeToDB)
                 {
-                    MySqlCommand command = new MySqlCommand("INSERT INTO `channels` VALUES(NULL, @channel_name, @lobby_type, @locked)", connection);
-                    command.Prepare();
-                    command.Parameters.AddWithValue("@channel_name", channel.Name);
-                    command.Parameters.AddWithValue("@lobby_type", lobbyString);
-                    command.Parameters.AddWithValue("@locked", lockedString);
-                    try
+                    MySqlConnection connection = MySqlConnector.GetConnection();
+                    if (connection != null)
                     {
-                        command.ExecuteReader();
+                        MySqlCommand command = new MySqlCommand("INSERT INTO `channels` VALUES(NULL, @channel_name, @lobby_type, @locked)", connection);
+                        command.Prepare();
+                        command.Parameters.AddWithValue("@channel_name", channel.Name);
+                        command.Parameters.AddWithValue("@lobby_type", lobbyString);
+                        command.Parameters.AddWithValue("@locked", lockedString);
+                        try
+                        {
+                            command.ExecuteReader();
+                        }
+                        catch
+                        {
+                            Console.WriteLine("channels table: could not INSERT " + channel.Name);
+                        }
+                        connection.Close();
                     }
-                    catch
-                    {
-                        Console.WriteLine("channels table: could not INSERT " + channel.Name);
-                    }
-                    connection.Close();
                 }
+            }
+        }
+
+        public void RestoreFromDB()
+        {
+            MySqlConnection connection = MySqlConnector.GetConnection();
+            if (connection != null)
+            {
+                MySqlCommand command = new MySqlCommand("SELECT `channel_name`, `lobby_type`, `locked` FROM `channels` ORDER BY `id` ASC", connection);
+                command.Prepare();
+                try
+                {
+                    MySqlDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        string channelName = reader.GetString("channel_name");
+                        string lobbyString = reader.GetString("lobby_type");
+                        string lockedString = reader.GetString("locked");
+                        TalkyChannel restoredChannel;
+
+                        if (lobbyString.Equals("true"))
+                        {
+                            restoredChannel = new LobbyChannel(channelName);
+                        }
+                        else if (lockedString.Equals("true"))
+                        {
+                            restoredChannel = new SystemChannel(channelName, true);
+                        }
+                        else
+                        {
+                            restoredChannel = new ClientChannel(channelName, true);
+                        }
+
+                        Store(restoredChannel, false);
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine("channels table: could not SELECT in RestoreFromDB ");
+                }
+                connection.Close();
             }
         }
 
@@ -129,17 +172,23 @@ namespace Server.Channel
         {
             lock (_lock)
             {
-                _channels.Remove(channel);
-            }
+                // Remove gets called when there are 0 clients in the channel.
+                // However, if the channel is just recently restored from recovery and clients have not reconnected yet,
+                // don't delete the channel!  Btw, the InRecovery flag is set back to false as soon as the first client joins.
+                if (false == (channel.InRecovery))
+                {
+                    _channels.Remove(channel);
 
-            MySqlConnection connection = MySqlConnector.GetConnection();
-            if (connection != null)
-            {
-                MySqlCommand command = new MySqlCommand("DELETE FROM `channels` WHERE channel_name = @channel_name", connection);
-                command.Prepare();
-                command.Parameters.AddWithValue("@channel_name", channel.Name);
-                command.ExecuteReader();
-                connection.Close();
+                    MySqlConnection connection = MySqlConnector.GetConnection();
+                    if (connection != null)
+                    {
+                        MySqlCommand command = new MySqlCommand("DELETE FROM `channels` WHERE channel_name = @channel_name", connection);
+                        command.Prepare();
+                        command.Parameters.AddWithValue("@channel_name", channel.Name);
+                        command.ExecuteReader();
+                        connection.Close();
+                    }
+                }
             }
         }
     }

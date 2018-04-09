@@ -98,6 +98,7 @@ namespace Server.Client
             {
                 channel.BroadcastMessage(Username + " joined " + "§4" + channel.Name + "§0!");
             }
+            channel.InRecovery = false;
         }
     }
 }

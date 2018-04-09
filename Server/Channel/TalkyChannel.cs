@@ -6,8 +6,9 @@ namespace Server.Channel
     {
         public string Name { get; set; }
         public bool Locked { get; set; }
+        public bool InRecovery { get; set; }
 
-        protected TalkyChannel(string name, bool locked)
+        protected TalkyChannel(string name, bool locked, bool inRecovery)
         {
             if (!name.StartsWith("+"))
             {
@@ -16,6 +17,7 @@ namespace Server.Channel
 
             Name = name.Replace(";", "-").Replace(":", "-").ToLower();
             Locked = locked;
+            InRecovery = inRecovery;
         }
 
         public void Kick(ServerClient client, string reason = null)

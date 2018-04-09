@@ -3,7 +3,7 @@
     class ClientChannel : TalkyChannel
     {
 
-        public ClientChannel(string name) : base(name, false) { }
+        public ClientChannel(string name, bool inRecovery) : base(name, false, inRecovery) { }
 
     }
 }

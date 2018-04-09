@@ -133,17 +133,13 @@ namespace Server
                 // Recreate channel list from DB, don't write new channels to DB
                 Console.Write("+lobby channel is already in DB! Server restarted and now doing recovery");
 
-                // TODO: Recreate channel repository list but do not write duplicates to DB
-                // Right now this is just making 1 lobby channel upon recovery
-                if (_channelRepository.GetLobby() == null)
-                {
-                    _channelRepository.Store(new LobbyChannel("+lobby"), false);
-                }
+                // Recreate channel repository list but do not write duplicates to DB
+                _channelRepository.RestoreFromDB();
 
                 return;
             }
 
-            IReadOnlyDictionary<string, string> channels = new Dictionary<string, string> { { "+lobby", "true,false" }, { "+admins", "false,true" }, { "+publicChat", "false,false" } };
+            IReadOnlyDictionary<string, string> channels = new Dictionary<string, string> { { "+lobby", "true,false" }, { "+admins", "false,true" }};
 
             foreach (string key in channels.Keys)
             {

@@ -79,11 +79,11 @@ namespace Server
             Console.WriteLine($" on port {port}");
 
             _chatServer1 = new ChatServer(port);
-            _chatServer1.Init();
 
             WaitForAnotherInstance();
             ManageInstances();
-            
+            _chatServer1.Init();
+
             try
             {
                 (new Thread(_chatServer1.Start)).Start();

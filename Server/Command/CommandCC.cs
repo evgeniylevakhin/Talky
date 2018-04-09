@@ -36,7 +36,7 @@ namespace Server.Command
                 return;
             }
 
-            ClientChannel chan = new ClientChannel(desiredChannel);
+            ClientChannel chan = new ClientChannel(desiredChannel, false);
             ChannelRepository.Instance.Store(chan, true);
             client.SendMessage("§4Your channel has been created.");
             client.JoinChannel(chan);
