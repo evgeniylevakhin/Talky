@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace Client.Connection
 {
@@ -28,29 +29,33 @@ namespace Client.Connection
 
         public void Connect()
         {
-            try
+            //while (true)
             {
-                Disconnect();
-                _client = new TcpClient(Host, Port);
-                _reader = new StreamReader(_client.GetStream());
-                _writer = new StreamWriter(_client.GetStream());
-
-                if (_config.Password.Equals(""))
+                try
                 {
-                    Send("M:/name " + _config.UserName);
-                }
-                else
-                {
-                    Send("M:/auth " + _config.UserName + " " + _config.Password);
-                }
+                    Disconnect();
+                    _client = new TcpClient(Host, Port);
+                    _reader = new StreamReader(_client.GetStream());
+                    _writer = new StreamWriter(_client.GetStream());
 
-                Send("S:Client");
-                Send("S:Account");
-                Send("S:ChannelClientList");
-            }
-            catch
-            {
-                _client = null;
+                    if (_config.Password.Equals(""))
+                    {
+                        Send("M:/name " + _config.UserName);
+                    }
+                    else
+                    {
+                        Send("M:/auth " + _config.UserName + " " + _config.Password);
+                    }
+
+                    Send("S:Client");
+                    Send("S:Account");
+                    Send("S:ChannelClientList");
+                }
+                catch
+                {
+                    _client = null;
+                }
+                Thread.Sleep(500);
             }
         }
 

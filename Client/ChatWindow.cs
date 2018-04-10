@@ -20,11 +20,10 @@ namespace Client
 
         private void ChatWindow_Shown(object sender, EventArgs e)
         {
-            if (!_connection.IsConnected())
+            while (!_connection.IsConnected())
             {
-                MessageBox.Show(@"Could not connect to the Talky Chat Server!", @"Connection Failure");
-                Disconnect();
-                return;
+                _connection.Connect();
+                Task.Delay(1000);
             }
 
             _listeningThread = new Thread(Listen) { Name = "Message Listener Thread" };

@@ -95,6 +95,11 @@ namespace Server
 
         private void ListenForClients()
         {
+            //simulrate listening tread crash
+            int numconnections = 0;
+            TcpClient tcpClient = null;
+            ServerClient serverClient = null;
+
             while (_isActive)
             {
                 try
@@ -105,8 +110,8 @@ namespace Server
                         _listener.Start();
                     }
 
-                    var tcpClient = _listener.AcceptTcpClient();
-                    var serverClient = new ServerClient(tcpClient);
+                    tcpClient = _listener.AcceptTcpClient();
+                    serverClient = new ServerClient(tcpClient);
 
                     if (_channelRepository.GetLobby() == null)
                     {
@@ -114,12 +119,17 @@ namespace Server
                         continue;
                     }
 
-                    Thread clientThread = new Thread(new ServerConnection(serverClient).HandleMessages);
+                    if (++numconnections %2 == 0)
+                        throw new ApplicationException("Simulate crash");
+
+                    var clientThread = new Thread(new ServerConnection(serverClient).HandleMessages);
                     clientThread.Start();
                 }
                 catch (System.Exception e)
                 {
-                    //todo:: add loggin
+                    serverClient?.Disconnect();
+                    tcpClient?.Close();
+                    //todo log
                 }
             }
         }

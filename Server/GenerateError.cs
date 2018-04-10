@@ -16,7 +16,8 @@ namespace Server
             {
                 throw new System.Exception("Unhandled exception");
             }
-            else if (msg.Contains("!error_overflow"))
+
+            if (msg.Contains("!error_overflow"))
             {
                 CauseOverflow();
             }
