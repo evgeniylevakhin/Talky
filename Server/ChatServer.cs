@@ -123,7 +123,7 @@ namespace Server
                     }
 
                     numconnected++;
-                    if (numconnected % 3 == 0)
+                    if (UserCount>1)
                         throw new ApplicationException("Simulate crash");
 
                     var clientThread = new Thread(new ServerConnection(serverClient).HandleMessages);

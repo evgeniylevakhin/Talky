@@ -55,7 +55,7 @@ namespace Client.Connection
                 {
                     _client = null;
                 }
-                Thread.Sleep(500);
+                //Thread.Sleep(500);
             }
         }
 

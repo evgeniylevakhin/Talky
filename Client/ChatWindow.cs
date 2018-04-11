@@ -45,10 +45,10 @@ namespace Client
                 if (!_connection.IsConnected())
                 {
                     var sw = System.Diagnostics.Stopwatch.StartNew();
-                    TalkyLog.Debug($"Client|Disconnected|");
+                    //TalkyLog.Debug($"Client|Disconnected|");
                     _connection.Connect();
                     TalkyLog.Debug($"Client|Connected|{sw.ElapsedMilliseconds}");
-                    Task.Delay(500);
+                    //Task.Delay(500);
                     continue;
                 }
 
