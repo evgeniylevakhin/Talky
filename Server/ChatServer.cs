@@ -7,6 +7,7 @@ using Server.Channel;
 using Server.Client;
 using Server.Command;
 using Server.Connection;
+using Shared;
 
 namespace Server
 {
@@ -88,7 +89,7 @@ namespace Server
                 }
                 catch (System.Exception ex)
                 {
-                    //todo:: 
+                    TalkyLog.Debug(ex.ToString());
                 }
             }
         }
@@ -96,7 +97,7 @@ namespace Server
         private void ListenForClients()
         {
             //simulrate listening tread crash
-            int numconnections = 0;
+            int numconnected = 0;
             TcpClient tcpClient = null;
             ServerClient serverClient = null;
 
@@ -108,8 +109,10 @@ namespace Server
                     {
                         _listener = new TcpListener(IPAddress.Any, _port);
                         _listener.Start();
+                        TalkyLog.Debug("Server|Listener|Started|");
                     }
 
+                    TalkyLog.Debug("Server|Listener|Accepting|");
                     tcpClient = _listener.AcceptTcpClient();
                     serverClient = new ServerClient(tcpClient);
 
@@ -119,17 +122,19 @@ namespace Server
                         continue;
                     }
 
-                    if (++numconnections %2 == 0)
+                    numconnected++;
+                    if (numconnected % 3 == 0)
                         throw new ApplicationException("Simulate crash");
 
                     var clientThread = new Thread(new ServerConnection(serverClient).HandleMessages);
                     clientThread.Start();
                 }
-                catch (System.Exception e)
+                catch (System.Exception ex)
                 {
+                    TalkyLog.Debug("Server|Listener|Crashed");
                     serverClient?.Disconnect();
                     tcpClient?.Close();
-                    //todo log
+                    TalkyLog.Debug(ex.ToString());
                 }
             }
         }

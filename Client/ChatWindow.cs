@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Client.Connection;
+using Shared;
 
 namespace Client
 {
@@ -43,8 +44,11 @@ namespace Client
 
                 if (!_connection.IsConnected())
                 {
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    TalkyLog.Debug($"Client|Disconnected|");
                     _connection.Connect();
-                    Task.Delay(1000);
+                    TalkyLog.Debug($"Client|Connected|{sw.ElapsedMilliseconds}");
+                    Task.Delay(500);
                     continue;
                 }
 

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using Shared;
 
 namespace Server
 {
@@ -16,7 +17,10 @@ namespace Server
         private static extern bool SetConsoleCtrlHandler(EventHandler handler, bool add);
 
         private delegate bool EventHandler(CtrlType sig);
-        static EventHandler _handler;
+
+        private static EventHandler _handler;
+
+        static EventWaitHandle wh = new EventWaitHandle(true, EventResetMode.AutoReset, "talkyevent");
 
 
         static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
@@ -26,6 +30,7 @@ namespace Server
             Console.WriteLine(e.ExceptionObject.ToString());
             Console.ForegroundColor = colorBefore;
             _chatServer1?.ShutDown();
+            wh.Set();
             Environment.Exit(1);
         }
 
@@ -48,6 +53,7 @@ namespace Server
                 case CtrlType.CTRL_LOGOFF_EVENT:
                 case CtrlType.CTRL_SHUTDOWN_EVENT:
                 case CtrlType.CTRL_CLOSE_EVENT:
+                    wh.Set();
                     _chatServer1?.ShutDown();
                     return true;
                 default:
@@ -63,6 +69,7 @@ namespace Server
             SetConsoleCtrlHandler(_handler, true);
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
 
+            TalkyLog.Debug("Server|Starting|");
             Console.Write("Starting server... ");
             int port = 0;
             if (args.Length > 0)
@@ -96,22 +103,28 @@ namespace Server
         }
         private static void WaitForAnotherInstance()
         {
-            var appSingleton = new Mutex(false, "talkysingleinstancemtx");
+            //var appSingleton = new Mutex(false, "talkysingleinstancemtx");
+            TalkyLog.Debug("Server|MutexWaiting|");
 
             try
             {
-                appSingleton.WaitOne();
+                wh.WaitOne();
+                //appSingleton.WaitOne();
             }
-            catch (AbandonedMutexException ex)
+            catch (AbandonedMutexException e)
             {
+                TalkyLog.Debug(e.ToString());
+                //appSingleton.WaitOne();
+                
                 //another process exited 
             }
             catch (System.Exception e)
             {
-                ManageInstances();
+                TalkyLog.Debug(e.ToString());
+                //ManageInstances();
                 Environment.Exit(-1);
             }
-            Console.WriteLine(" acquired");
+            TalkyLog.Debug("Server|MutexAcquired|");
 
         }
 
